@@ -1,0 +1,54 @@
+version: '3.7'
+
+services:
+  lullaby_redis:
+    container_name: lullaby_redis
+    image: redis
+    expose:
+      - 6379
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+    restart: always
+
+  lullaby_db:
+    image: "postgres"
+    container_name: lullaby_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data/
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=lullaby
+    networks:
+      - backend
+
+  lullaby_service:
+    container_name: lullaby_service
+    image: lullaby_service
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - '5000:5000'
+    networks:
+      - backend
+    environment:
+      API_KEY: 123456
+      DATABASE_URL: postgresql://postgres:postgres@lullaby_db/lullaby
+      REDIS_HOST: lullaby_redis
+    depends_on:
+      - lullaby_db
+      - lullaby_redis
+
+
+volumes:
+  db_data:
+
+networks:
+  backend:
+    driver: bridge
